@@ -51,8 +51,8 @@ import pipelines
 class Application(tornado.web.Application):
     """Main coverage application"""
     def __init__(self):
-        with open("config.conf", "r") as f:
-            conf = json.loads(f.readline())
+        with open("config.conf", "r") as conf_file:
+            conf = json.load(conf_file)
         self.client = motor.MotorClient(host=conf["hostname"], port=conf["port"], 
                                         ssl=True, ssl_certfile=conf["client_pem"], 
                                         ssl_cert_reqs=ssl.CERT_REQUIRED, 

@@ -62,8 +62,6 @@ The file must contain a dictionary with the following information:
  "github_token": <github_token>}
 ```
 
-Note that the information must be entirely in one line.
-
 ###Run web app###
 ```bash
 python <path_to_jsonTransmission.py> &

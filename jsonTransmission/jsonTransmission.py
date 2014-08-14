@@ -53,6 +53,7 @@ class Application(tornado.web.Application):
     def __init__(self):
         with open("config.conf", "r") as conf_file:
             conf = json.load(conf_file)
+            conf_file.close()
         self.client = motor.MotorClient(host=conf["hostname"], port=conf["port"], 
                                         ssl=True, ssl_certfile=conf["client_pem"], 
                                         ssl_cert_reqs=ssl.CERT_REQUIRED, 

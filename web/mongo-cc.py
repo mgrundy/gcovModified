@@ -11,24 +11,11 @@
  #
  #    You should have received a copy of the GNU Affero General Public License
  #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
- #
- #    As a special exception, the copyright holders give permission to link the
- #    code of portions of this program with the OpenSSL library under certain
- #    conditions as described in each individual source file and distribute
- #    linked combinations including the program with the OpenSSL library. You
- #    must comply with the GNU Affero General Public License in all respects for
- #    all of the code used other than as permitted herein. If you modify file(s)
- #    with this exception, you may extend this exception to your version of the
- #    file(s), but you are not obligated to do so. If you do not wish to do so,
- #    delete this exception statement from your version. If you delete this
- #    exception statement from all source files in the program, then also delete
- #    it in the license file.
 
 import json
 from bson.json_util import dumps as bsondumps
 import re
 import datetime
-import ssl
 import base64
 import urllib
 import string
@@ -36,6 +23,7 @@ import copy
 
 import tornado.ioloop
 import tornado.web
+import tornado.options
 from tornado.escape import json_decode
 import pymongo
 import motor
@@ -54,13 +42,7 @@ class Application(tornado.web.Application):
         with open("config.conf", "r") as conf_file:
             conf = json.load(conf_file)
             conf_file.close()
-        self.client = motor.MotorClient(host=conf["hostname"], port=conf["port"], 
-                                        ssl=True, ssl_certfile=conf["client_pem"], 
-                                        ssl_cert_reqs=ssl.CERT_REQUIRED, 
-                                        ssl_ca_certs=conf["ca_file"])
-
-        self.client.the_database.authenticate(conf["username"], mechanism="MONGODB-X509")
-
+        self.client = motor.MotorClient(host=conf["hostname"], port=conf["port"])
         self.db = self.client[conf["database"]]
         self.collection = self.db[conf["collection"]]
         self.meta_collection = self.db[conf["meta_collection"]]
@@ -75,8 +57,7 @@ class Application(tornado.web.Application):
             (r"/meta", CacheHandler),
             (r"/style", StyleHandler),
             (r"/compare", CompareHandler),
-            (r"/static/(.*)", tornado.web.StaticFileHandler, {"path": "static/"}),
-            (r"/", tornado.web.RedirectHandler, {"url": "/report"}),
+            (r"/static/(.*)", tornado.web.StaticFileHandler, {"path": "static/"})
         ],)
 
 @gen.coroutine
@@ -105,7 +86,7 @@ def get_ghub_file(token, git_hash, file_name):
     headers = {"Authorization": "token " + token}
     http_client = tornado.httpclient.HTTPClient()
     request = tornado.httpclient.HTTPRequest(url=url, headers=headers,
-                                             user_agent="Maria's API Test")
+                                             user_agent="mongo-cc-ui")
     try:
         response = http_client.fetch(request)
         response_dict = json.loads(response.body)
@@ -132,7 +113,6 @@ class MainHandler(tornado.web.RequestHandler):
     @tornado.web.asynchronous
     @gen.coroutine
     def post(self):
-        # redirect to /report home page
         if self.request.headers.get("Content-Type") == "application/json":
             json_args = json_decode(self.request.body)
       
@@ -142,6 +122,10 @@ class MainHandler(tornado.web.RequestHandler):
                        " inserted!\n")
         else:
             self.write_error(422)
+
+    def get(self):
+        # redirect to /report home page
+        self.redirect("/report")
 
 
 class DataHandler(tornado.web.RequestHandler):
@@ -260,6 +244,14 @@ class DataHandler(tornado.web.RequestHandler):
                 if "line_count" in results[key]:
                     percentage = float(results[key]["line_cov_count"])/results[key]["line_count"] * 100
                     results[key]["line_cov_percentage"] = round(percentage, 2)
+                    # hard code for test, make configurable
+                    if percentage >= 85:
+                        results[key]["highlight"] = "success"
+                    elif percentage >= 70:    
+                        results[key]["highlight"] = "warning"
+                    else:
+                        results[key]["highlight"] = "danger"
+
                 if "func_count" in results[key]:
                     percentage = float(results[key]["func_cov_count"])/results[key]["func_count"] * 100
                     results[key]["func_cov_percentage"] = round(percentage, 2)
@@ -358,8 +350,19 @@ class CacheHandler(tornado.web.RequestHandler):
         pipeline = [{"$match":{"build_id": build_id, "git_hash": git_hash,
                                "file": re.compile("^src\/mongo")}}, 
                     {"$project":{"file":1, "lc":1}}, {"$unwind":"$lc"}, 
-                    {"$group":{"_id":"$file", "count":{"$sum":1}, 
-                     "noexec":{"$sum":{"$cond":[{"$eq":["$lc.ec",0]},1,0]}}}  }]
+                    {
+                        "$group" : {
+                            "_id" : {
+                                "f" : "$file",
+                                "l" : "$lc.ln"
+                                },
+                            "ec" : {
+                                "$sum" : "$lc.ec"
+                                }
+                            }
+                        },
+                    {"$group":{"_id":"$_id.f", "count":{"$sum":1}, 
+                     "noexec":{"$sum":{"$cond":[{"$eq":["$ec",0]},1,0]}}}  }]
 
         cursor =  yield self.application.collection.aggregate(pipeline, cursor={})
         total = 0
@@ -375,7 +378,9 @@ class CacheHandler(tornado.web.RequestHandler):
         json_args["line_cov_percentage"] = round(float(total-noexec_total)/total * 100, 2)
 
         # Generate function results
-        pipeline = [{"$project": {"file":1,"functions":1}}, {"$unwind":"$functions"},
+        pipeline = [{"$match":{"build_id": build_id, "git_hash": git_hash,
+                               "file": re.compile("^src\/mongo")}}, 
+                   {"$project": {"file":1,"functions":1}}, {"$unwind":"$functions"},
                     {"$group": { "_id":"$functions.nm", 
                                  "count" : { "$sum" : "$functions.ec"}}}] 
         cursor =  yield self.application.collection.aggregate(pipeline, cursor={})
@@ -525,7 +530,7 @@ class ReportHandler(tornado.web.RequestHandler):
 
         if len(args) == 0:
             # Get git hashes and build IDs 
-            cursor =  self.application.meta_collection.find().sort("date", pymongo.DESCENDING)
+            cursor =  self.application.meta_collection.find().sort("_id.build_id.", pymongo.DESCENDING)
             results = []
 
             while (yield cursor.fetch_next):
@@ -759,11 +764,11 @@ class CompareHandler(tornado.web.RequestHandler):
                 if "line_count1" in entry:
                     entry["line_count2"] = "N/A"
                     entry["line_cov_count2"] = "N/A"
-                    entry["line_cov_percentage2"] = "N/A"
+                    entry["line_cov_percentage2"] = 0
                 else:
                     entry["line_count1"] = "N/A"
                     entry["line_cov_count1"] = "N/A"
-                    entry["line_cov_percentage1"] = "N/A"
+                    entry["line_cov_percentage1"] = 0
 
                 continue
             
@@ -804,4 +809,5 @@ class StyleHandler(tornado.web.RequestHandler):
 if __name__ == "__main__":
     application = Application()
     application.listen(application.http_port)
+    tornado.options.parse_command_line()
     tornado.ioloop.IOLoop.instance().start()

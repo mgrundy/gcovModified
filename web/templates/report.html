@@ -59,7 +59,7 @@
    <table class="table table-striped">
     <thead>
      <tr>
-      <th>Git Commit</th>
+      <th>Build ID</th>
       <th>Date</th>
       <th>Line Coverage</th>
       <th>Line Coverage %</th>
@@ -70,7 +70,7 @@
     <tbody>
      {% for result in results %}
      <tr>
-      <td><a href="/report?build_id={{ url_escape(result['_id']['build_id']) }}&git_hash={{ url_escape(result['_id']['git_hash']) }}" data-toggle="tooltip" title="{{ result['_id']['build_id'] }}"> {{ result['_id']['git_hash'] }}</a></td>
+      <td><a href="/report?build_id={{ url_escape(result['_id']['build_id']) }}&git_hash={{ url_escape(result['_id']['git_hash']) }}" data-toggle="tooltip" title="{{ result['_id']['git_hash'] }}"> {{ result['_id']['build_id'] }}</a></td>
       <td>{{ result['date'] }}</td>
       {% if 'line_count' in result %}
       <td>{{ result['line_cov_count'] }} / {{ result['line_count'] }}</td>

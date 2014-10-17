@@ -1,0 +1,24 @@
+#!/bin/bash 
+
+for build in $(cat hotlist); do
+    githash=$(echo $build | sed -E 's/.*64_coverage_([0-9a-f]+)_.*/\1/')
+    builddt=$(echo $build | sed -E 's/.*64_coverage_([0-9a-f]+)_(..)_(..)_(..)_(..)_([[:digit:]]{2})_(..).*/20\2-\3-\4T\5:\6:\7.000000/g')
+    shortdt=$(echo $build | sed -E 's/.*64_coverage_([0-9a-f]+)_(..)_(..)_(..)_(..)_([[:digit:]]{2})_(..).*/20\2-\3-\4/g')
+    mkdir build-$shortdt
+    cd build-$shortdt
+    for artifact in $(curl https://mci.10gen.com/task_log_raw/${build}/0?type=T | grep Attaching | sed -E 's/.*; (.*)<.*/\1/'); do
+        echo Build ${shortdt} ${githash} ${builddt}
+        echo collecting $artifact Build-${shortdt}.${githash}-${builddt}
+        curl -O $artifact    
+    done
+    for file in *.tgz; do 
+        echo Expanding $file
+        tar xzf $file
+    done
+    echo Starting gcov
+    find -name \*.gcda -exec ~/gcov -i {} \;
+    echo Guess we import now....
+    python  /opt/10gen/mongo-cc-ui/current/web/mcc-import.py -g $githash -b  UnitTests-${shortdt} -c http://127.0.0.1:3000 -t unitTests -a master -p Linux64 -r `pwd` -d $builddt
+    cd -
+    rm -rf build-$shortdt
+ done

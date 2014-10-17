@@ -1,0 +1,36 @@
+#!/bin/bash
+IHOST="http://mongo-cc-ui-1.vpc3.10gen.cc:8080"
+for tarball in Baseline*.bz2; do 
+	VERS=$(echo $tarball | sed -E 's/Baseline-(.\..\..)-([a-f0-9]+)\.tar\.bz2/\1/')
+	GITH=$(echo $tarball | sed -E 's/Baseline-(.\..\..)-([a-f0-9]+)\.tar\.bz2/\2/')
+	WDIR=${tarball/.tar.bz2/}
+	mkdir $WDIR
+	cd $WDIR
+	tar xjf ../$tarball
+
+	for testsuite in *; do 
+		cd $testsuite  
+		python /opt/10gen/mongo-cc-ui/current/web/mcc-import.py -g $GITH -b Baseline-${VERS} -c $IHOST -t $testsuite -a r${VERS}  -p Linux64 -r `pwd` -d 2014-09-09T21:12:00.000000 >> ../${testsuite}.log; 
+		cd - 
+		echo $la imported
+	done
+	cd
+done
+for tarball in Master*.bz2; do 
+	#Faking it
+	BUILDDATE=$(date +%Y-%m-%dT%T.%6N)
+	BUILDID=$(date +%Y-%m-%d)
+	VERS=$(echo $tarball | sed -E 's/Baseline-(.\..\..)-([a-f0-9]+)\.tar\.bz2/\1/')
+	GITH=$(echo $tarball | sed -E 's/Baseline-(.\..\..)-([a-f0-9]+)\.tar\.bz2/\2/')
+	WDIR=${tarball/.tar.bz2/}
+	mkdir $WDIR
+	cd $WDIR
+	tar xjf ../$tarball
+
+	for testsuite in *; do 
+		cd $testsuite  
+		python /opt/10gen/mongo-cc-ui/current/web/mcc-import.py -g $GITH -b Nightly-${BUILDID}-${VERS} -c $IHOST -t $testsuite -a r${VERS}  -p Linux64 -r `pwd` -d $BUILDDATE >> ../${testsuite}.log; 
+		cd - 
+		echo $la imported
+	done
+done

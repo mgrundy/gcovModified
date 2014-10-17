@@ -58,11 +58,6 @@ def do_json_import():
                       help="root directory of JSON files",
                       default=None)
 
-    parser.add_option("--recursive", dest="recurse",
-                      help="make import recursive",
-                      action="store_true",
-                      default=False)
-
     parser.add_option("-d", "--date", dest="date",
                       help="date of build",
                       default=None)
@@ -106,30 +101,6 @@ def do_json_import():
     # Check if date is properly formatted 
     date = datetime.datetime.strptime(options.date, "%Y-%m-%dT%H:%M:%S.%f")
  
-    if options.recurse:
-        # Walk through files in root
-        for dir_path, sub_dirs, file_names in os.walk(options.root):
-            for file_name in file_names:
-                if not file_name.endswith(".json"):
-                    continue
-            
-                print "\nNow importing " + file_name + ":\n"
-
-                # Insert the record for a file
-                do_import_file(os.path.join(dir_path, file_name), options.ghash, 
-                               options.build, options.tname, http_client, 
-                               options.connectstr)
-    
-    else:
-        # Import all json files in root directory
-        files = [os.path.join(options.root, f) 
-                 for f in os.listdir(options.root) if os.path.isfile(os.path.join(options.root, f))]
-        for f in files:
-            if not f.endswith(".json"):
-                continue
-            do_import_file(f, options.ghash, options.build, options.tname, 
-                           http_client, options.connectstr)
-
     # Gather meta info
     meta_record = {}
     meta_record["_id"] = {"build_id": options.build,
@@ -140,7 +111,7 @@ def do_json_import():
        
     request = tornado.httpclient.HTTPRequest(url=options.connectstr + "/meta", 
                                              method="POST", 
-                                             request_timeout=300.0,
+                                             request_timeout=600.0,
                                              body=json.dumps(meta_record))
     try:
         response = http_client.fetch(request)
@@ -150,32 +121,6 @@ def do_json_import():
 
     http_client.close()
 
-
-def do_import_file(file_name, git_hash, build_id, test_name, http_client, url):
-    """Import contents of a single file into database."""
-    with open(file_name, "r") as f:
-        for line in f:
-            if line == "\n":
-                continue
-            record = json.loads(line)
-            record["git_hash"] = git_hash 
-            record["build_id"] = build_id 
-            record["test_name"] = test_name 
-        
-            file_index = record["file"].rfind("/") + 1
-            record["dir"] = record["file"][: file_index]
-        
-            request = tornado.httpclient.HTTPRequest(
-                                                 url=url,
-                                                 method="POST", 
-                                                 headers={"Content-Type": "application/json"},
-                                                 request_timeout=300.0,
-                                                 body=json.dumps(record))
-            try:
-                response = http_client.fetch(request)
-                print response.body
-            except tornado.httpclient.HTTPError as e:
-                print "Error: ", e
 
 
 do_json_import()

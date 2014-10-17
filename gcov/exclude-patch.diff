@@ -1,0 +1,64 @@
+--- /local/gcovStuff/gcovModified/gcov.c	2014-07-31 14:31:55.362554002 +0000
++++ gcov.c	2014-07-22 21:22:31.977917839 +0000
+@@ -351,6 +351,13 @@
+ 
+ static int flag_function_summary = 0;
+ 
++/* Use object_directory prefix for notes (gcno) files but not .gcda.
++   Used for processing .gcda files that were saved to a GCOV_PREFIX 
++   location without linking or copying the notes files. */
++
++static int flag_objdir_exclude_gcda = 0;
++
++
+ /* Object directory file prefix.  This is the directory/file where the
+    graph and data files are looked for, if nonzero.  */
+ 
+@@ -485,6 +492,7 @@
+   fnotice (file, "  -m, --demangled-names           Output demangled function names\n");
+   fnotice (file, "  -n, --no-output                 Do not create an output file\n");
+   fnotice (file, "  -o, --object-directory DIR|FILE Search for object files in DIR or called FILE\n");
++  fnotice (file, "  -e, --exclude-gcdas             exclude .gcda files from --object-directory DIR\n");
+   fnotice (file, "  -p, --preserve-paths            Preserve all pathname components\n");
+   fnotice (file, "  -r, --relative-only             Only show data for relative sources\n");
+   fnotice (file, "  -s, --source-prefix DIR         Source prefix to elide\n");
+@@ -525,6 +533,7 @@
+   { "preserve-paths",       no_argument,       NULL, 'p' },
+   { "relative-only",        no_argument,       NULL, 'r' },
+   { "object-directory",     required_argument, NULL, 'o' },
++  { "exclude-gcdas",        no_argument,       NULL, 'e' },
+   { "object-file",          required_argument, NULL, 'o' },
+   { "source-prefix",        required_argument, NULL, 's' },
+   { "unconditional-branches", no_argument,     NULL, 'u' },
+@@ -571,6 +580,9 @@
+ 	case 'o':
+ 	  object_directory = optarg;
+ 	  break;
++	case 'e':
++	  flag_objdir_exclude_gcda = 1;
++	  break;
+ 	case 's':
+ 	  source_prefix = optarg;
+ 	  source_length = strlen (source_prefix);
+@@ -1067,9 +1079,18 @@
+   strcpy (bbg_file_name, name);
+   strcpy (bbg_file_name + length, GCOV_NOTE_SUFFIX);
+ 
+-  da_file_name = XNEWVEC (char, length + strlen (GCOV_DATA_SUFFIX) + 1);
+-  strcpy (da_file_name, name);
+-  strcpy (da_file_name + length, GCOV_DATA_SUFFIX);
++  if ( flag_objdir_exclude_gcda )
++    {
++      /* We were passed the name of an gcov data file to process */
++      da_file_name = XNEWVEC (char, strlen (file_name) + 1);
++      strcpy (da_file_name, file_name);
++    }
++  else
++    {
++      da_file_name = XNEWVEC (char, length + strlen (GCOV_DATA_SUFFIX) + 1);
++      strcpy (da_file_name, name);
++      strcpy (da_file_name + length, GCOV_DATA_SUFFIX);
++    }
+ 
+   free (name);
+   return;

@@ -1,0 +1,62 @@
+diff --git a/web/mongo-cc.py b/web/mongo-cc.py
+index 8a49172..98e94ad 100644
+--- a/web/mongo-cc.py
+@@ -741,11 +762,11 @@ class CompareHandler(tornado.web.RequestHandler):
+                 if "line_count1" in entry:
+                     entry["line_count2"] = "N/A"
+                     entry["line_cov_count2"] = "N/A"
+-                    entry["line_cov_percentage2"] = "N/A"
++                    entry["line_cov_percentage2"] = 0
+                 else:
+                     entry["line_count1"] = "N/A"
+                     entry["line_cov_count1"] = "N/A"
+-                    entry["line_cov_percentage1"] = "N/A"
++                    entry["line_cov_percentage1"] = 0
+ 
+                 continue
+             
++++ b/web/mongo-cc.py
+diff --git a/web/templates/buildCompare.html b/web/templates/buildCompare.html
+index 5976cf4..4ea61cd 100644
+--- a/web/templates/buildCompare.html
++++ b/web/templates/buildCompare.html
+@@ -18,12 +18,12 @@
+       </tr>
+       <tr>
+        <th>Directory</th>
+-       <th>Lines</th>
+-       <th>Covered</th>
+-       <th>Coverage %</th>
+-       <th>Lines</th>
+-       <th>Covered</th>
+-       <th>Coverage %</th>
++       <th class="text-right">Lines</th>
++       <th class="text-right">Covered</th>
++       <th class="text-right">Coverage %</th>
++       <th class="text-right">Lines</th>
++       <th class="text-right">Covered</th>
++       <th class="text-right">Coverage %</th>
+        <th>Coverage Difference</th>
+       </tr>
+      </thead>
+@@ -35,13 +35,13 @@
+        <tr>
+        {% end %}
+            <td><a href="/compare?build_id1={{ url_escape(build_id1) }}&build_id2={{ url_escape(build_id2) }}&dir={{url_escape(key)}}">{{ key }}</a></td>
+-        <td>{{ results[key]["line_count1"] }}</td>
+-        <td>{{ results[key]["line_cov_count1"] }}</td>
+-        <td>{{ results[key]["line_cov_percentage1"] }}</td>
+-        <td>{{ results[key]["line_count2"] }}</td>
+-        <td>{{ results[key]["line_cov_count2"] }}</td>
+-        <td>{{ results[key]["line_cov_percentage2"] }}</td>
+-        <td>{{ results[key]["coverage_comparison"] }}</td>
++        <td class="text-right">{{ results[key]["line_count1"] }}</td>
++        <td class="text-right">{{ results[key]["line_cov_count1"] }}</td>
++        <td class="text-right">{{ "{0:.2f}".format(results[key]["line_cov_percentage1"]) }}</td>
++        <td class="text-right">{{ results[key]["line_count2"] }}</td>
++        <td class="text-right">{{ results[key]["line_cov_count2"] }}</td>
++        <td class="text-right">{{ "{0:.2f}".format(results[key]["line_cov_percentage2"]) }}</td>
++        <td class="text-center">{{ results[key]["coverage_comparison"] }}</td>
+        </tr>
+       {% end %}
+      </tbody>

@@ -18,12 +18,12 @@
       </tr>
       <tr>
        <th>Directory</th>
-       <th>Lines</th>
-       <th>Covered</th>
-       <th>Coverage %</th>
-       <th>Lines</th>
-       <th>Covered</th>
-       <th>Coverage %</th>
+       <th class="text-right">Lines</th>
+       <th class="text-right">Covered</th>
+       <th class="text-right">Coverage %</th>
+       <th class="text-right">Lines</th>
+       <th class="text-right">Covered</th>
+       <th class="text-right">Coverage %</th>
        <th>Coverage Difference</th>
       </tr>
      </thead>
@@ -35,13 +35,13 @@
        <tr>
        {% end %}
            <td><a href="/compare?build_id1={{ url_escape(build_id1) }}&build_id2={{ url_escape(build_id2) }}&dir={{url_escape(key)}}">{{ key }}</a></td>
-        <td>{{ results[key]["line_count1"] }}</td>
-        <td>{{ results[key]["line_cov_count1"] }}</td>
-        <td>{{ results[key]["line_cov_percentage1"] }}</td>
-        <td>{{ results[key]["line_count2"] }}</td>
-        <td>{{ results[key]["line_cov_count2"] }}</td>
-        <td>{{ results[key]["line_cov_percentage2"] }}</td>
-        <td>{{ results[key]["coverage_comparison"] }}</td>
+        <td class="text-right">{{ results[key]["line_count1"] }}</td>
+        <td class="text-right">{{ results[key]["line_cov_count1"] }}</td>
+        <td class="text-right">{{ "{0:.2f}".format(results[key]["line_cov_percentage1"]) }}</td>
+        <td class="text-right">{{ results[key]["line_count2"] }}</td>
+        <td class="text-right">{{ results[key]["line_cov_count2"] }}</td>
+        <td class="text-right">{{ "{0:.2f}".format(results[key]["line_cov_percentage2"]) }}</td>
+        <td class="text-center">{{ results[key]["coverage_comparison"] }}</td>
        </tr>
       {% end %}
      </tbody>

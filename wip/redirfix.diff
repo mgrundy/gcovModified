@@ -1,0 +1,39 @@
+diff --git a/web/mongo-cc.py b/web/mongo-cc.py
+index 8a49172..0338419 100644
+--- a/web/mongo-cc.py
++++ b/web/mongo-cc.py
+@@ -51,14 +51,13 @@ class Application(tornado.web.Application):
+         self.token = conf["github_token"]
+        
+         super(Application, self).__init__([
+-            (r"/", tornado.web.RedirectHandler, {"url": "/report"}),
+             (r"/", MainHandler),
+             (r"/report", ReportHandler),
+             (r"/data", DataHandler),
+             (r"/meta", CacheHandler),
+             (r"/style", StyleHandler),
+             (r"/compare", CompareHandler),
+-            (r"/static/(.*)", tornado.web.StaticFileHandler, {"path": "static/"}),
++            (r"/static/(.*)", tornado.web.StaticFileHandler, {"path": "static/"})
+         ],)
+ 
+ @gen.coroutine
+@@ -114,7 +113,6 @@ class MainHandler(tornado.web.RequestHandler):
+     @tornado.web.asynchronous
+     @gen.coroutine
+     def post(self):
+-        # redirect to /report home page
+         if self.request.headers.get("Content-Type") == "application/json":
+             json_args = json_decode(self.request.body)
+       
+@@ -125,6 +123,10 @@ class MainHandler(tornado.web.RequestHandler):
+         else:
+             self.write_error(422)
+ 
++    def get(self):
++        # redirect to /report home page
++        self.redirect("/report")
++
+ 
+ class DataHandler(tornado.web.RequestHandler):
+     @gen.coroutine

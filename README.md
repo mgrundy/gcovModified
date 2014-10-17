@@ -44,8 +44,8 @@ db.<collection>.ensureIndex({"build_id": 1, "dir":1})
 db.<collection>.ensureIndex({"build_id": 1, "file":1})
 ```
 ###Set up config file for web app###
-`jsonTransmission.py` expects a config file entitled `config.conf` 
-in the directory from which `jsonTransmission.py` is run.
+`mongo-cc.py` expects a config file entitled `config.conf` 
+in the directory from which `mongo-cc.py` is run.
 The file must contain a dictionary with the following information:
 
 ```python
@@ -62,14 +62,16 @@ The file must contain a dictionary with the following information:
  "github_token": <github_token>}
 ```
 
+Note that the information must be entirely in one line.
+
 ###Run web app###
 ```bash
-python <path_to_jsonTransmission.py> &
+python <path_to_mongo-cc.py> &
 ```
 
 ###Run import program###
 ```bash
-python <path_to_jsonImport.py> -b <build_id> -g <git_hash> -c <connection_url> -t <test_name> -a <branch_name> -p <platform_name> -r <root_directory> -d <build_date>
+python <path_to_mcc-import.py> -b <build_id> -g <git_hash> -c <connection_url> -t <test_name> -a <branch_name> -p <platform_name> -r <root_directory> -d <build_date>
 ```
 
 ##General Info##
@@ -80,16 +82,16 @@ gcov. It allows users to filter their coverage results by test suite. Additional
 the build comparison feature to determine the coverage changes between two revisions of the source.
 
 The source of the program consists of several components:
-* `jsonTransmission.py` (the web app component)
-* `jsonImport.py` (the data import program)
+* `mongo-cc.py` (the web app component)
+* `mcc-import.py` (the data import program)
 * `gcov.c` (the modified gcov source from gcc 4.9.0)
 * `gcov-io.c`/`gcov-io.h` (updated gcov files containing helper functions for coverage display)
 
 System information can be found in the `requirements.txt` file.
 
 ##To do##
-* Add option in `jsonImport.py` to specify pattern of file names to 
+* Add option in `mcc-import.py` to specify pattern of file names to 
 import. 
-* Add option in `jsonTransmission.py` to select alternate directories
+* Add option in `mongo-cc.py` to select alternate directories
 besides `src/mongo` to search for build/git hash coverage results
 
